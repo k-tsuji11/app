@@ -1,30 +1,34 @@
-from pyscript import display
-from js import document
+from pyscript import display, window
 
 def calculate(event):
-    # 入力値を取得
-    wage_str = document.getElementById("wage").value
-    hours_str = document.getElementById("hours").value
+    # documentオブジェクトをwindowから取得
+    doc = window.document
     
-    result_div = document.getElementById("result")
+    # 入力値の取得
+    wage_input = doc.getElementById("wage")
+    hours_input = doc.getElementById("hours")
+    result_div = doc.getElementById("result")
     
-    # バリデーション
-    if not wage_str or not hours_str:
-        result_div.innerHTML = '<p style="color: #ef4444;">値を入力してください</p>'
+    # 値が空でないかチェック
+    if not wage_input.value or not hours_input.value:
+        result_div.innerHTML = '<p style="color: #ef4444;">数値を入力してください</p>'
         return
 
     try:
-        wage = float(wage_str)
-        hours = float(hours_str)
-        total = wage * hours
+        # 計算処理
+        wage = float(wage_input.value)
+        hours = float(hours_input.value)
+        total = int(wage * hours)
         
-        # カンマ区切りのフォーマット
-        formatted_total = "{:,}".format(int(total))
+        # カンマ区切り
+        formatted_total = "{:,}".format(total)
         
-        # HTMLを流し込む
+        # HTMLを更新
         result_div.innerHTML = f"""
-            <div style="font-size: 0.9rem; color: #666;">概算支給額</div>
-            <div class="result-amount">{formatted_total}<span class="currency">円</span></div>
+            <div style="font-size: 0.9rem; color: #666; margin-bottom: 5px;">概算支給額</div>
+            <div class="result-amount" style="font-size: 2rem; font-weight: bold; color: #6366f1;">
+                {formatted_total}<span style="font-size: 1rem; margin-left: 4px;">円</span>
+            </div>
         """
     except Exception as e:
-        result_div.innerHTML = f'<p style="color: #ef4444;">エラーが発生しました</p>'
+        result_div.innerHTML = f'<p style="color: #ef4444;">エラー: {str(e)}</p>'
