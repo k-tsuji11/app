@@ -3,214 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Salary Simulator</title>
+    <title>Premium Money Tracker</title>
     
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --primary: #4f46e5;
-            --secondary: #10b981;
-            --danger: #ef4444;
-            --bg: #f8fafc;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --deduction: #fb7185;
+            --text: #f1f5f9;
         }
 
         body {
-            font-family: 'Noto Sans JP', sans-serif;
-            background-color: var(--bg);
-            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-            background-size: 20px 20px;
+            font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+            background: var(--bg);
+            color: var(--text);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
+            min-height: 100vh;
         }
 
-        .container {
-            background: white;
+        .app-container {
             width: 100%;
-            max-width: 500px;
-            padding: 30px;
-            border-radius: 24px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            max-width: 480px;
+            animation: slideUp 0.6s ease-out;
         }
 
-        header { text-align: center; margin-bottom: 30px; }
-        h1 { font-size: 1.5rem; color: #1e293b; margin: 0; }
-        
-        .input-grid {
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        h1 { font-size: 1.8rem; margin-bottom: 2rem; text-align: center; color: var(--accent); }
+
+        .input-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .full { grid-column: span 2; }
+
+        label { font-size: 0.8rem; color: #94a3b8; letter-spacing: 1px; }
+        input {
+            background: #334155;
+            border: none;
+            padding: 15px;
+            border-radius: 16px;
+            color: white;
+            font-size: 1.1rem;
+            transition: ring 0.3s;
+        }
+        input:focus { outline: 2px solid var(--accent); }
+
+        /* グラフエリア */
+        .visual-area { margin-top: 30px; }
+        .progress-container {
+            height: 12px;
+            background: #334155;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            margin: 15px 0;
+        }
+        #bar-net { background: var(--accent); width: 0%; transition: width 0.5s; }
+        #bar-tax { background: var(--deduction); width: 0%; transition: width 0.5s; }
+
+        .stat-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
-            margin-bottom: 20px;
+            margin-top: 25px;
         }
 
-        .full-width { grid-column: span 2; }
-
-        .field { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 0.85rem; font-weight: bold; color: #64748b; }
-        
-        input {
-            padding: 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            font-size: 1rem;
-            background: #f1f5f9;
-        }
-
-        input:focus { outline: 2px solid var(--primary); background: white; }
-
-        .button-group { display: flex; gap: 10px; margin-top: 10px; }
-        
-        button {
-            flex: 2;
+        .stat-box {
+            background: rgba(255,255,255,0.03);
             padding: 15px;
-            border-radius: 12px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            border-radius: 20px;
+            text-align: center;
         }
+        .stat-val { font-size: 1.3rem; font-weight: bold; display: block; }
+        .stat-label { font-size: 0.7rem; color: #94a3b8; }
 
-        .btn-calc { background: var(--primary); color: white; }
-        .btn-reset { background: #e2e8f0; color: #64748b; flex: 1; }
-        button:hover { opacity: 0.9; transform: scale(0.98); }
-
-        #result { margin-top: 30px; }
-
-        .summary-card {
-            background: #f1f5f9;
+        .main-result {
+            text-align: center;
+            margin-top: 10px;
             padding: 20px;
-            border-radius: 16px;
-            border-left: 5px solid var(--primary);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), transparent);
+            border-radius: 24px;
         }
+        .main-result .price { font-size: 3rem; font-weight: 800; color: var(--accent); }
 
-        .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; }
-        .total-row { 
-            margin-top: 15px; 
-            padding-top: 15px; 
-            border-top: 1px solid #cbd5e1;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--secondary);
-        }
-
-        .badge {
-            background: #dcfce7;
-            color: #166534;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 0.75rem;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1><span class="material-icons-outlined">payments</span> 給与シミュレーター</h1>
-        </header>
+<div class="app-container">
+    <div class="glass-card">
+        <h1>Payroll Insight</h1>
 
-        <div class="input-grid">
-            <div class="field full-width">
-                <label>基本時給 (円)</label>
-                <input type="number" id="wage" placeholder="1200" value="1200">
+        <div class="input-section">
+            <div class="input-group full">
+                <label>Hourly Wage / 時給</label>
+                <input type="number" id="wage" value="1200" py-input="calculate">
             </div>
-            <div class="field">
-                <label>通常労働 (h)</label>
-                <input type="number" id="hours" placeholder="160">
+            <div class="input-group">
+                <label>Hours / 平時</label>
+                <input type="number" id="hours" value="160" py-input="calculate">
             </div>
-            <div class="field">
-                <label>残業時間 (h)</label>
-                <input type="number" id="overtime" placeholder="0">
-            </div>
-            <div class="field full-width">
-                <label>交通費 (円/月)</label>
-                <input type="number" id="transport" placeholder="0">
+            <div class="input-group">
+                <label>Overtime / 残業</label>
+                <input type="number" id="overtime" value="0" py-input="calculate">
             </div>
         </div>
 
-        <div class="button-group">
-            <button class="btn-reset" py-click="reset_fields">
-                <span class="material-icons-outlined">restart_alt</span>
-            </button>
-            <button class="btn-calc" py-click="calculate">
-                <span class="material-icons-outlined">bolt</span> 計算を実行
-            </button>
-        </div>
+        <div id="display-area" class="visual-area">
+            <div class="main-result">
+                <span class="stat-label">MONTHLY TAKE-HOME / 推定手取り</span>
+                <div class="price">¥<span id="net-pay-val">0</span></div>
+            </div>
 
-        <div id="result"></div>
+            <div class="progress-container">
+                <div id="bar-net"></div>
+                <div id="bar-tax"></div>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <span class="stat-label">Gross / 額面</span>
+                    <span class="stat-val" id="gross-val">¥0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Tax & Ins / 控除</span>
+                    <span class="stat-val" style="color:var(--deduction)" id="tax-val">¥0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Annual / 推定年収</span>
+                    <span class="stat-val" id="annual-val">¥0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Per Min / 分給</span>
+                    <span class="stat-val" id="min-val">¥0</span>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-    <script type="py">
-        from pyscript import window
+<script type="py">
+from pyscript import window
 
-        def reset_fields(event):
-            doc = window.document
-            for id in ["wage", "hours", "overtime", "transport"]:
-                doc.getElementById(id).value = ""
-            doc.getElementById("result").innerHTML = ""
+def calculate(event=None):
+    doc = window.document
+    
+    try:
+        # 値の取得
+        wage = float(doc.getElementById("wage").value or 0)
+        hours = float(doc.getElementById("hours").value or 0)
+        overtime = float(doc.getElementById("overtime").value or 0)
+        
+        # ロジック
+        gross = (wage * hours) + (wage * 1.25 * overtime)
+        tax = gross * 0.20  # 約20%控除
+        net = gross - tax
+        annual = gross * 12
+        per_min = wage / 60
+        
+        # 表示更新
+        doc.getElementById("net-pay-val").innerText = f"{int(net):,}"
+        doc.getElementById("gross-val").innerText = f"¥{int(gross):,}"
+        doc.getElementById("tax-val").innerText = f"¥{int(tax):,}"
+        doc.getElementById("annual-val").innerText = f"¥{int(annual/10000):,}万"
+        doc.getElementById("min-val").innerText = f"¥{int(per_min):,}"
+        
+        # グラフ更新
+        net_percent = (net / gross * 100) if gross > 0 else 0
+        tax_percent = (tax / gross * 100) if gross > 0 else 0
+        doc.getElementById("bar-net").style.width = f"{net_percent}%"
+        doc.getElementById("bar-tax").style.width = f"{tax_percent}%"
+        
+    except Exception as e:
+        pass
 
-        def calculate(event):
-            doc = window.document
-            
-            try:
-                # 入力値の取得（空なら0にする）
-                get_val = lambda id: float(doc.getElementById(id).value or 0)
-                
-                wage = get_val("wage")
-                hours = get_val("hours")
-                overtime = get_val("overtime")
-                transport = get_val("transport")
-                
-                # 計算ロジック
-                base_pay = wage * hours
-                overtime_pay = (wage * 1.25) * overtime
-                gross_pay = base_pay + overtime_pay # 総支給（交通費除く）
-                
-                # 社会保険料・税金の概算 (約20%)
-                deductions = int(gross_pay * 0.20)
-                
-                # 手取り計算
-                net_pay = int(gross_pay - deductions + transport)
-                
-                # 結果表示用のHTML作成
-                result_div = doc.getElementById("result")
-                result_div.innerHTML = f"""
-                    <div class="summary-card">
-                        <div class="row">
-                            <span>基本給</span>
-                            <span>¥{int(base_pay):,}</span>
-                        </div>
-                        <div class="row">
-                            <span>残業代 <span class="badge">1.25倍</span></span>
-                            <span>¥{int(overtime_pay):,}</span>
-                        </div>
-                        <div class="row">
-                            <span>交通費</span>
-                            <span>¥{int(transport):,}</span>
-                        </div>
-                        <div class="row" style="color: #94a3b8;">
-                            <span>控除（社保・税）概算</span>
-                            <span>- ¥{deductions:,}</span>
-                        </div>
-                        <div class="total-row">
-                            <span>推定手取り額</span>
-                            <span>¥{net_pay:,}</span>
-                        </div>
-                    </div>
-                """
-                
-            except Exception as e:
-                window.alert("数値を正しく入力してください")
+# 起動時に一度計算
+calculate()
+</script>
 
-    </script>
 </body>
 </html>
