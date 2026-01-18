@@ -48,7 +48,7 @@
         }
 
         h2 { font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 20px; color: #9ca3af; }
-
+        
         .field { margin-bottom: 15px; }
         label { display: block; font-size: 0.75rem; color: #9ca3af; margin-bottom: 5px; }
         input {
@@ -62,23 +62,25 @@
             box-sizing: border-box;
         }
 
+        /* 派手な計算ボタン */
         .calc-button {
             width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, var(--gold), #d97706);
+            padding: 18px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             color: white;
             font-weight: bold;
             font-size: 1.1rem;
             cursor: pointer;
-            margin-top: 10px;
-            box-shadow: 0 4px 0 #92400e;
-            transition: all 0.1s;
+            margin-top: 15px;
+            box-shadow: 0 5px 0 #92400e;
+            transition: 0.1s;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
         .calc-button:active {
             transform: translateY(3px);
-            box-shadow: 0 1px 0 #92400e;
+            box-shadow: 0 2px 0 #92400e;
         }
 
         .status-side {
@@ -88,7 +90,6 @@
             gap: 20px;
         }
 
-        .level-text { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
         .total-amount { font-size: 2.8rem; font-weight: bold; color: white; text-align: center; }
         .unit { font-size: 0.9rem; margin-left: 5px; }
 
@@ -98,7 +99,7 @@
             border-radius: 12px;
             border: 1px dashed #374151;
         }
-        
+
         .progress-bg {
             background: #111827;
             height: 18px;
@@ -110,7 +111,7 @@
             background: linear-gradient(90deg, #059669, #10b981);
             height: 100%;
             width: 0%;
-            transition: width 0.6s ease;
+            transition: width 0.6s cubic-bezier(0.17, 0.67, 0.83, 0.67);
         }
 
         .advice-box {
@@ -143,100 +144,106 @@
         <div class="field"><label>通常勤務 (h)</label><input type="number" id="hours" value="160"></div>
         <div class="field"><label>残業 (h)</label><input type="number" id="overtime" value="0"></div>
 
-        <h2 style="border-left-color: var(--success);">MISSION TARGET</h2>
+        <h2 style="border-color: var(--success);">MISSION TARGET</h2>
         <div class="field"><label>目標手取り (Goal)</label><input type="number" id="target" value="250000"></div>
 
-        <button id="calc-btn" class="calc-button">QUEST UPDATE 💰</button>
+        <button class="calc-button" py-click="calculate">QUEST UPDATE 💰</button>
     </div>
 
     <div class="status-side">
-        <div style="display: flex; justify-content: space-between; align-items: baseline;">
-            <div class="level-text">LV: <span id="lv">1</span></div>
-            <div id="rank" style="color:var(--gold); font-size: 0.8rem;">駆け出し</div>
+        <div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                <div style="color: var(--gold);">LV: <span id="lv">1</span></div>
+                <div id="rank" style="color: var(--gold);">駆け出し</div>
+            </div>
+            <div class="total-amount"><span id="net">0</span><span class="unit">円</span></div>
         </div>
-        <div class="total-amount"><span id="net">0</span><span class="unit">円</span></div>
         
         <div class="quest-box">
             <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px;">
-                <span>QUEST PROGRESS</span><span id="percent-text">0%</span>
+                <span>QUEST PROGRESS</span>
+                <span id="percent-text">0%</span>
             </div>
             <div class="progress-bg"><div id="progress-fill"></div></div>
             <div id="remaining-area" style="text-align: right; margin-top: 8px; font-size: 0.8rem;"></div>
         </div>
 
         <div class="advice-box" id="advice-container">
-            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 8px;">追加クエスト必要時間:</div>
+            <div style="color: #9ca3af; margin-bottom: 5px;">クリアへの道筋:</div>
             <div id="advice-list"></div>
         </div>
     </div>
 </div>
 
 <script type="py">
-from pyscript import window, document
-from pyodide.ffi import create_proxy
+from pyscript import window
 
-last_cleared = False
+# 達成状態を保持
+is_goal_met = False
 
-def calculate(event):
-    global last_cleared
+def calculate(event=None):
+    global is_goal_met
+    doc = window.document
     
     try:
-        wage = float(document.getElementById("wage").value or 0)
-        hours = float(document.getElementById("hours").value or 0)
-        overtime = float(document.getElementById("overtime").value or 0)
-        target = float(document.getElementById("target").value or 1)
+        # 入力値の取得
+        wage = float(doc.getElementById("wage").value or 0)
+        hrs = float(doc.getElementById("hours").value or 0)
+        ot = float(doc.getElementById("overtime").value or 0)
+        tgt = float(doc.getElementById("target").value or 1)
         
-        # 計算
-        current_gross = (wage * hours) + (wage * 1.25 * overtime)
-        net = int(current_gross * 0.8)
-        diff_net = max(0, target - net)
+        # ロジック：手取り換算
+        gross = (wage * hrs) + (wage * 1.25 * ot)
+        net = int(gross * 0.8)
         
-        # 音を鳴らす
-        if diff_net <= 0 and not last_cleared:
-            audio = document.getElementById("se-clear")
-            audio.currentTime = 0
-            audio.play()
-            last_cleared = True
-        else:
-            audio = document.getElementById("se-coin")
-            audio.currentTime = 0
-            audio.play()
-            if diff_net > 0: last_cleared = False
+        diff_net = max(0, tgt - net)
+        
+        # --- サウンド再生ロジック ---
+        if event: # ボタンクリック時のみ
+            if diff_net <= 0 and not is_goal_met:
+                # ちょうど目標達成した瞬間
+                audio = doc.getElementById("se-clear")
+                audio.currentTime = 0
+                audio.play()
+                is_goal_met = True
+            else:
+                # 通常の計算（チャリン）
+                audio = doc.getElementById("se-coin")
+                audio.currentTime = 0
+                audio.play()
+                if diff_net > 0: is_goal_met = False
 
-        # 反映
-        document.getElementById("net").innerText = f"{net:,}"
-        document.getElementById("lv").innerText = str((net // 10000) + 1)
+        # 画面更新
+        doc.getElementById("net").innerText = f"{net:,}"
+        doc.getElementById("lv").innerText = str((net // 10000) + 1)
         
-        percent = min(100, (net / target) * 100)
-        document.getElementById("progress-fill").style.width = f"{percent}%"
-        document.getElementById("percent-text").innerText = f"{int(percent)}%"
+        pct = min(100, (net / tgt) * 100)
+        doc.getElementById("progress-fill").style.width = f"{pct}%"
+        doc.getElementById("percent-text").innerText = f"{int(pct)}%"
         
-        # 残り
-        rem_area = document.getElementById("remaining-area")
-        adv_list = document.getElementById("advice-list")
+        # アドバイス表示
+        rem_el = doc.getElementById("remaining-area")
+        adv_el = doc.getElementById("advice-list")
+        
         if diff_net <= 0:
-            rem_area.innerHTML = "<span style='color:var(--success); font-weight:bold;'>QUEST CLEAR!</span>"
-            adv_list.innerHTML = "ミッション達成済みです。"
+            rem_el.innerHTML = "<span style='color:var(--success); font-weight:bold;'>QUEST CLEAR!</span>"
+            adv_el.innerHTML = "おめでとう！ミッション完了です。"
         else:
-            rem_area.innerHTML = f"目標まであと <span style='color:var(--danger); font-weight:bold;'>{diff_net:,}</span> 円"
+            rem_el.innerHTML = f"目標まであと <span style='color:var(--danger);'>{diff_net:,}</span> 円"
             need_h = (diff_net / 0.8) / wage if wage > 0 else 0
-            adv_list.innerHTML = f"通常勤務あと <span style='color:var(--gold); font-weight:bold;'>{need_h:.1f}</span> 時間"
+            adv_el.innerHTML = f"通常クエストあと <b style='color:var(--gold);'>{need_h:.1f}</b> 時間で達成可能"
 
-        # ランク
-        rank = "駆け出し"
-        if net >= 300000: rank = "伝説の勇者"
-        elif net >= 200000: rank = "熟練の戦士"
-        document.getElementById("rank").innerText = rank
+        # ランク判定
+        rank_text = "駆け出し"
+        if net >= 300000: rank_text = "伝説の勇者"
+        elif net >= 200000: rank_text = "熟練の戦士"
+        doc.getElementById("rank").innerText = rank_text
 
     except Exception as e:
         print(f"Error: {e}")
 
-# ボタンにイベントを登録
-calc_btn = document.getElementById("calc-btn")
-calc_btn.addEventListener("click", create_proxy(calculate))
-
-# 初期計算
-calculate(None)
+# 初回実行
+calculate()
 </script>
 
 </body>
