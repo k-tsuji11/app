@@ -48,7 +48,6 @@
         }
 
         h2 { font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 20px; color: #9ca3af; }
-        .target-title { border-color: var(--success); }
 
         .field { margin-bottom: 15px; }
         label { display: block; font-size: 0.75rem; color: #9ca3af; margin-bottom: 5px; }
@@ -62,8 +61,25 @@
             font-size: 1rem;
             box-sizing: border-box;
         }
-        input:focus { border-color: var(--primary); outline: none; }
-        .target-input { border-color: #065f46; color: var(--success); }
+
+        .calc-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--gold), #d97706);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 0 #92400e;
+            transition: all 0.1s;
+        }
+        .calc-button:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #92400e;
+        }
 
         .status-side {
             padding: 10px 20px;
@@ -72,20 +88,16 @@
             gap: 20px;
         }
 
-        .level-header { display: flex; justify-content: space-between; align-items: baseline; }
         .level-text { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
-        
         .total-amount { font-size: 2.8rem; font-weight: bold; color: white; text-align: center; }
         .unit { font-size: 0.9rem; margin-left: 5px; }
 
-        /* クエスト達成率ゲージ */
         .quest-box {
             background: rgba(0,0,0,0.2);
             padding: 15px;
             border-radius: 12px;
             border: 1px dashed #374151;
         }
-        .quest-header { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; }
         
         .progress-bg {
             background: #111827;
@@ -101,7 +113,6 @@
             transition: width 0.6s ease;
         }
 
-        
         .advice-box {
             font-size: 0.85rem;
             background: #2d3748;
@@ -109,8 +120,6 @@
             border-radius: 10px;
             color: #e2e8f0;
         }
-        .advice-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .highlight { color: var(--gold); font-weight: bold; }
 
         @media (max-width: 600px) {
             .container { grid-template-columns: 1fr; }
@@ -120,129 +129,114 @@
 </head>
 <body>
 
+<audio id="se-coin" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" type="audio/mpeg">
+</audio>
+<audio id="se-clear" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3" type="audio/mpeg">
+</audio>
+
 <div class="container">
     <div class="input-side">
         <h2>CHARACTER STATS</h2>
-        <div class="field">
-            <label>時給 (ATK)</label>
-            <input type="number" id="wage" value="1200" py-input="calculate">
-        </div>
-        <div class="field">
-            <label>通常勤務 (Normal Quest / h)</label>
-            <input type="number" id="hours" value="160" py-input="calculate">
-        </div>
-        <div class="field">
-            <label>残業 (Bonus Stage / h)</label>
-            <input type="number" id="overtime" value="0" py-input="calculate">
-        </div>
+        <div class="field"><label>時給 (ATK)</label><input type="number" id="wage" value="1200"></div>
+        <div class="field"><label>通常勤務 (h)</label><input type="number" id="hours" value="160"></div>
+        <div class="field"><label>残業 (h)</label><input type="number" id="overtime" value="0"></div>
 
-        <h2 class="target-title">MISSION TARGET</h2>
-        <div class="field">
-            <label>目標手取り金額 (Goal)</label>
-            <input type="number" id="target" value="250000" class="target-input" py-input="calculate">
-        </div>
+        <h2 style="border-left-color: var(--success);">MISSION TARGET</h2>
+        <div class="field"><label>目標手取り (Goal)</label><input type="number" id="target" value="250000"></div>
+
+        <button id="calc-btn" class="calc-button">QUEST UPDATE 💰</button>
     </div>
 
     <div class="status-side">
-        <div>
-            <div class="level-header">
-                <div class="level-text">LV: <span id="lv">1</span></div>
-                <div id="rank" style="color:var(--gold); font-size: 0.8rem;">駆け出し</div>
-            </div>
-            <div class="total-amount"><span id="net">0</span><span class="unit">円</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <div class="level-text">LV: <span id="lv">1</span></div>
+            <div id="rank" style="color:var(--gold); font-size: 0.8rem;">駆け出し</div>
         </div>
+        <div class="total-amount"><span id="net">0</span><span class="unit">円</span></div>
         
         <div class="quest-box">
-            <div class="quest-header">
-                <span>QUEST PROGRESS</span>
-                <span id="percent-text">0%</span>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px;">
+                <span>QUEST PROGRESS</span><span id="percent-text">0%</span>
             </div>
-            <div class="progress-bg">
-                <div id="progress-fill"></div>
-            </div>
-            <div id="remaining-area" style="text-align: right; margin-top: 8px; font-size: 0.8rem;">
-                目標まであと <span style="color:var(--danger); font-weight:bold;" id="diff">0</span> 円
-            </div>
+            <div class="progress-bg"><div id="progress-fill"></div></div>
+            <div id="remaining-area" style="text-align: right; margin-top: 8px; font-size: 0.8rem;"></div>
         </div>
 
         <div class="advice-box" id="advice-container">
             <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 8px;">追加クエスト必要時間:</div>
-            <div class="advice-item">
-                <span>通常勤務で達成:</span>
-                <span>あと <span class="highlight" id="need-hours">0</span> 時間</span>
-            </div>
-            <div class="advice-item">
-                <span>残業ブーストで達成:</span>
-                <span>あと <span class="highlight" id="need-overtime">0</span> 時間</span>
-            </div>
+            <div id="advice-list"></div>
         </div>
     </div>
 </div>
 
 <script type="py">
-from pyscript import window
+from pyscript import window, document
+from pyodide.ffi import create_proxy
 
-def calculate(event=None):
-    doc = window.document
+last_cleared = False
+
+def calculate(event):
+    global last_cleared
     
     try:
-        wage = float(doc.getElementById("wage").value or 0)
-        hours = float(doc.getElementById("hours").value or 0)
-        overtime = float(doc.getElementById("overtime").value or 0)
-        target = float(doc.getElementById("target").value or 1)
+        wage = float(document.getElementById("wage").value or 0)
+        hours = float(document.getElementById("hours").value or 0)
+        overtime = float(document.getElementById("overtime").value or 0)
+        target = float(document.getElementById("target").value or 1)
         
-        # 手取り計算 (80%換算)
-        # 手取り目標を額面目標に逆算して考える
-        # net = (gross * 0.8) => gross = net / 0.8
-        target_gross = target / 0.8
-        
+        # 計算
         current_gross = (wage * hours) + (wage * 1.25 * overtime)
         net = int(current_gross * 0.8)
-        
-        # 達成計算
         diff_net = max(0, target - net)
-        diff_gross = diff_net / 0.8
         
-        # 必要時間の逆算
-        # 通常時給での必要時間
-        if wage > 0:
-            need_h = diff_gross / wage
-            need_ot = diff_gross / (wage * 1.25)
+        # 音を鳴らす
+        if diff_net <= 0 and not last_cleared:
+            audio = document.getElementById("se-clear")
+            audio.currentTime = 0
+            audio.play()
+            last_cleared = True
         else:
-            need_h = need_ot = 0
-            
-        # 画面反映
-        doc.getElementById("net").innerText = f"{net:,}"
-        doc.getElementById("lv").innerText = str((net // 10000) + 1)
+            audio = document.getElementById("se-coin")
+            audio.currentTime = 0
+            audio.play()
+            if diff_net > 0: last_cleared = False
+
+        # 反映
+        document.getElementById("net").innerText = f"{net:,}"
+        document.getElementById("lv").innerText = str((net // 10000) + 1)
         
         percent = min(100, (net / target) * 100)
-        doc.getElementById("progress-fill").style.width = f"{percent}%"
-        doc.getElementById("percent-text").innerText = f"{int(percent)}%"
+        document.getElementById("progress-fill").style.width = f"{percent}%"
+        document.getElementById("percent-text").innerText = f"{int(percent)}%"
         
-        advice_box = doc.getElementById("advice-container")
-        rem_area = doc.getElementById("remaining-area")
-        
+        # 残り
+        rem_area = document.getElementById("remaining-area")
+        adv_list = document.getElementById("advice-list")
         if diff_net <= 0:
             rem_area.innerHTML = "<span style='color:var(--success); font-weight:bold;'>QUEST CLEAR!</span>"
-            advice_box.style.display = "none"
+            adv_list.innerHTML = "ミッション達成済みです。"
         else:
-            doc.getElementById("diff").innerText = f"{diff_net:,}"
-            doc.getElementById("need-hours").innerText = f"{need_h:.1f}"
-            doc.getElementById("need-overtime").innerText = f"{need_ot:.1f}"
-            advice_box.style.display = "block"
             rem_area.innerHTML = f"目標まであと <span style='color:var(--danger); font-weight:bold;'>{diff_net:,}</span> 円"
+            need_h = (diff_net / 0.8) / wage if wage > 0 else 0
+            adv_list.innerHTML = f"通常勤務あと <span style='color:var(--gold); font-weight:bold;'>{need_h:.1f}</span> 時間"
 
         # ランク
         rank = "駆け出し"
         if net >= 300000: rank = "伝説の勇者"
         elif net >= 200000: rank = "熟練の戦士"
-        elif overtime > 30: rank = "不眠不休の狂戦士"
-        doc.getElementById("rank").innerText = rank
-        
-    except:
-        pass
+        document.getElementById("rank").innerText = rank
 
-calculate()
+    except Exception as e:
+        print(f"Error: {e}")
+
+# ボタンにイベントを登録
+calc_btn = document.getElementById("calc-btn")
+calc_btn.addEventListener("click", create_proxy(calculate))
+
+# 初期計算
+calculate(None)
 </script>
 
 </body>
