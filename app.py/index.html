@@ -13,7 +13,8 @@
         :root {
             --primary: #3b82f6;
             --gold: #f59e0b;
-            --success: #10b981; /* 目標用カラー */
+            --success: #10b981;
+            --danger: #f87171;
             --bg: #111827;
             --card: #1f2937;
         }
@@ -68,13 +69,13 @@
             padding: 10px 20px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 20px;
         }
 
         .level-header { display: flex; justify-content: space-between; align-items: baseline; }
         .level-text { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
         
-        .total-amount { font-size: 2.8rem; font-weight: bold; margin: 5px 0; color: white; text-align: center; }
+        .total-amount { font-size: 2.8rem; font-weight: bold; color: white; text-align: center; }
         .unit { font-size: 0.9rem; margin-left: 5px; }
 
         /* クエスト達成率ゲージ */
@@ -82,15 +83,14 @@
             background: rgba(0,0,0,0.2);
             padding: 15px;
             border-radius: 12px;
-            margin-top: 15px;
             border: 1px dashed #374151;
         }
         .quest-header { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; }
         
         .progress-bg {
             background: #111827;
-            height: 20px;
-            border-radius: 10px;
+            height: 18px;
+            border-radius: 9px;
             overflow: hidden;
             border: 1px solid #374151;
         }
@@ -98,16 +98,19 @@
             background: linear-gradient(90deg, #059669, #10b981);
             height: 100%;
             width: 0%;
-            transition: width 0.6s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            transition: width 0.6s ease;
         }
 
-        .remaining-text {
+        /* 逆算アドバイス */
+        .advice-box {
             font-size: 0.85rem;
-            margin-top: 10px;
-            text-align: right;
-            color: #d1d5db;
+            background: #2d3748;
+            padding: 12px;
+            border-radius: 10px;
+            color: #e2e8f0;
         }
-        .diff-amount { color: #f87171; font-weight: bold; }
+        .advice-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .highlight { color: var(--gold); font-weight: bold; }
 
         @media (max-width: 600px) {
             .container { grid-template-columns: 1fr; }
@@ -157,8 +160,20 @@
             <div class="progress-bg">
                 <div id="progress-fill"></div>
             </div>
-            <div class="remaining-text" id="remaining-area">
-                目標まであと <span class="diff-amount" id="diff">0</span> 円
+            <div id="remaining-area" style="text-align: right; margin-top: 8px; font-size: 0.8rem;">
+                目標まであと <span style="color:var(--danger); font-weight:bold;" id="diff">0</span> 円
+            </div>
+        </div>
+
+        <div class="advice-box" id="advice-container">
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 8px;">追加クエスト必要時間:</div>
+            <div class="advice-item">
+                <span>通常勤務で達成:</span>
+                <span>あと <span class="highlight" id="need-hours">0</span> 時間</span>
+            </div>
+            <div class="advice-item">
+                <span>残業ブーストで達成:</span>
+                <span>あと <span class="highlight" id="need-overtime">0</span> 時間</span>
             </div>
         </div>
     </div>
@@ -174,42 +189,58 @@ def calculate(event=None):
         wage = float(doc.getElementById("wage").value or 0)
         hours = float(doc.getElementById("hours").value or 0)
         overtime = float(doc.getElementById("overtime").value or 0)
-        target = float(doc.getElementById("target").value or 1) # 0除算防止
+        target = float(doc.getElementById("target").value or 1)
         
-        # 手取り計算
-        gross = (wage * hours) + (wage * 1.25 * overtime)
-        net = int(gross * 0.8)
+        # 手取り計算 (80%換算)
+        # 手取り目標を額面目標に逆算して考える
+        # net = (gross * 0.8) => gross = net / 0.8
+        target_gross = target / 0.8
         
-        # レベル計算
-        level = (net // 10000) + 1
+        current_gross = (wage * hours) + (wage * 1.25 * overtime)
+        net = int(current_gross * 0.8)
         
-        # 目標達成計算
-        percent = min(100, (net / target) * 100)
-        diff = int(target - net)
+        # 達成計算
+        diff_net = max(0, target - net)
+        diff_gross = diff_net / 0.8
         
+        # 必要時間の逆算
+        # 通常時給での必要時間
+        if wage > 0:
+            need_h = diff_gross / wage
+            need_ot = diff_gross / (wage * 1.25)
+        else:
+            need_h = need_ot = 0
+            
         # 画面反映
         doc.getElementById("net").innerText = f"{net:,}"
-        doc.getElementById("lv").innerText = str(level)
+        doc.getElementById("lv").innerText = str((net // 10000) + 1)
+        
+        percent = min(100, (net / target) * 100)
         doc.getElementById("progress-fill").style.width = f"{percent}%"
         doc.getElementById("percent-text").innerText = f"{int(percent)}%"
         
-        # あといくら？の表示制御
+        advice_box = doc.getElementById("advice-container")
         rem_area = doc.getElementById("remaining-area")
-        if diff <= 0:
-            rem_area.innerHTML = "<span style='color:#10b981; font-weight:bold;'>QUEST CLEAR!</span>"
+        
+        if diff_net <= 0:
+            rem_area.innerHTML = "<span style='color:var(--success); font-weight:bold;'>QUEST CLEAR!</span>"
+            advice_box.style.display = "none"
         else:
-            doc.getElementById("diff").innerText = f"{diff:,}"
-            rem_area.innerHTML = f"目標まであと <span class='diff-amount'>{diff:,}</span> 円"
+            doc.getElementById("diff").innerText = f"{diff_net:,}"
+            doc.getElementById("need-hours").innerText = f"{need_h:.1f}"
+            doc.getElementById("need-overtime").innerText = f"{need_ot:.1f}"
+            advice_box.style.display = "block"
+            rem_area.innerHTML = f"目標まであと <span style='color:var(--danger); font-weight:bold;'>{diff_net:,}</span> 円"
 
-        # ランク判定
+        # ランク
         rank = "駆け出し"
         if net >= 300000: rank = "伝説の勇者"
         elif net >= 200000: rank = "熟練の戦士"
         elif overtime > 30: rank = "不眠不休の狂戦士"
         doc.getElementById("rank").innerText = rank
         
-    except Exception as e:
-        print(e)
+    except:
+        pass
 
 calculate()
 </script>
