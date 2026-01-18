@@ -63,7 +63,26 @@
             box-sizing: border-box;
         }
         input:focus { border-color: var(--primary); outline: none; }
-        .target-input { border-color: #065f46; color: var(--success); }
+        
+        /* 計算ボタン */
+        .calc-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--gold), #d97706);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 0 #92400e;
+            transition: all 0.1s;
+        }
+        .calc-button:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #92400e;
+        }
 
         .status-side {
             padding: 10px 20px;
@@ -78,7 +97,6 @@
         .total-amount { font-size: 2.8rem; font-weight: bold; color: white; text-align: center; }
         .unit { font-size: 0.9rem; margin-left: 5px; }
 
-        /* クエスト達成率ゲージ */
         .quest-box {
             background: rgba(0,0,0,0.2);
             padding: 15px;
@@ -101,7 +119,6 @@
             transition: width 0.6s ease;
         }
 
-        
         .advice-box {
             font-size: 0.85rem;
             background: #2d3748;
@@ -120,8 +137,11 @@
 </head>
 <body>
 
-<audio id="coin-sound" preload="auto">
+<audio id="se-coin" preload="auto">
     <source src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" type="audio/mpeg">
+</audio>
+<audio id="se-clear" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3" type="audio/mpeg">
 </audio>
 
 <div class="container">
@@ -129,22 +149,24 @@
         <h2>CHARACTER STATS</h2>
         <div class="field">
             <label>時給 (ATK)</label>
-            <input type="number" id="wage" value="1200" py-input="calculate">
+            <input type="number" id="wage" value="1200">
         </div>
         <div class="field">
             <label>通常勤務 (Normal Quest / h)</label>
-            lculate">
+            <input type="number" id="hours" value="160">
         </div>
         <div class="field">
             <label>残業 (Bonus Stage / h)</label>
-            <input type="number" id="overtime" value="0" py-input="calculate">
+            <input type="number" id="overtime" value="0">
         </div>
 
         <h2 class="target-title">MISSION TARGET</h2>
         <div class="field">
             <label>目標手取り金額 (Goal)</label>
-            <input type="number" id="target" value="250000" class="target-input" py-input="calculate">
+            <input type="number" id="target" value="250000" style="border-color: #065f46; color: var(--success);">
         </div>
+
+        <button class="calc-button" py-click="calculate">QUEST UPDATE (計算する)</button>
     </div>
 
     <div class="status-side">
@@ -186,7 +208,11 @@
 <script type="py">
 from pyscript import window
 
+# 最後にクリアした状態を覚えておくための変数
+last_cleared = False
+
 def calculate(event=None):
+    global last_cleared
     doc = window.document
     
     try:
@@ -196,10 +222,6 @@ def calculate(event=None):
         target = float(doc.getElementById("target").value or 1)
         
         # 手取り計算 (80%換算)
-        # 手取り目標を額面目標に逆算して考える
-        # net = (gross * 0.8) => gross = net / 0.8
-        target_gross = target / 0.8
-        
         current_gross = (wage * hours) + (wage * 1.25 * overtime)
         net = int(current_gross * 0.8)
         
@@ -208,13 +230,25 @@ def calculate(event=None):
         diff_gross = diff_net / 0.8
         
         # 必要時間の逆算
-        # 通常時給での必要時間
         if wage > 0:
             need_h = diff_gross / wage
             need_ot = diff_gross / (wage * 1.25)
         else:
             need_h = need_ot = 0
             
+        # 効果音の再生
+        if diff_net <= 0 and not last_cleared:
+            # 今回初めてクリアした場合：ファンファーレ
+            doc.getElementById("se-clear").currentTime = 0
+            doc.getElementById("se-clear").play()
+            last_cleared = True
+        else:
+            # 通常の計算：チャリン
+            doc.getElementById("se-coin").currentTime = 0
+            doc.getElementById("se-coin").play()
+            if diff_net > 0:
+                last_cleared = False
+
         # 画面反映
         doc.getElementById("net").innerText = f"{net:,}"
         doc.getElementById("lv").innerText = str((net // 10000) + 1)
@@ -227,13 +261,13 @@ def calculate(event=None):
         rem_area = doc.getElementById("remaining-area")
         
         if diff_net <= 0:
-            rem_area.innerHTML = "<span style='color:var(--success); font-weight:bold;'>QUEST CLEAR!</span>"
-            advice_box.style.display = "none"
+            rem_area.innerHTML = "<span style='color:var(--success); font-weight:bold;'>★ QUEST CLEAR! ★</span>"
+            advice_box.style.visibility = "hidden"
         else:
             doc.getElementById("diff").innerText = f"{diff_net:,}"
             doc.getElementById("need-hours").innerText = f"{need_h:.1f}"
             doc.getElementById("need-overtime").innerText = f"{need_ot:.1f}"
-            advice_box.style.display = "block"
+            advice_box.style.visibility = "visible"
             rem_area.innerHTML = f"目標まであと <span style='color:var(--danger); font-weight:bold;'>{diff_net:,}</span> 円"
 
         # ランク
@@ -243,9 +277,10 @@ def calculate(event=None):
         elif overtime > 30: rank = "不眠不休の狂戦士"
         doc.getElementById("rank").innerText = rank
         
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
+# 起動時の一回目計算
 calculate()
 </script>
 

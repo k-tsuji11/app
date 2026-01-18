@@ -1,5 +1,16 @@
 from pyscript import display, window
 
+from pyodide.ffi import create_proxy
+
+def calculate(event=None):
+    # （計算処理...）
+    if event: # クリックイベントなどが発生した場合
+        window.document.getElementById("coin-sound").play()
+
+# ボタンクリックを監視する設定
+btn = window.document.getElementById("calc-btn")
+btn.addEventListener("click", create_proxy(calculate))
+
 def calculate(event):
     # documentオブジェクトをwindowから取得
     doc = window.document
