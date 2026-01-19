@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Leveler Lite - Quest Mode</title>
+    <title>Money Leveler - Quest Log Edition</title>
     
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
@@ -11,163 +11,63 @@
     
     <style>
         :root {
-            --primary: #3b82f6;
-            --gold: #f59e0b;
-            --success: #10b981;
-            --danger: #f87171;
-            --bg: #111827;
-            --card: #1f2937;
+            --primary: #3b82f6; --gold: #f59e0b; --success: #10b981;
+            --danger: #f87171; --bg: #111827; --card: #1f2937;
         }
 
-        body {
-            font-family: 'Noto Sans JP', sans-serif;
-            background-color: var(--bg);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
 
-        .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            width: 95%;
-            max-width: 850px;
-            background: var(--card);
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
+        .game-layout { display: grid; grid-template-columns: 350px 1fr; gap: 20px; max-width: 1000px; width: 100%; }
 
-        .input-side {
-            padding: 10px 20px;
-            border-right: 1px solid #374151;
-        }
-
-        h2 { font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 20px; color: #9ca3af; }
-
-        .field { margin-bottom: 15px; }
-        label { display: block; font-size: 0.75rem; color: #9ca3af; margin-bottom: 5px; }
-        input {
-            width: 100%;
-            background: #111827;
-            border: 2px solid #374151;
-            border-radius: 8px;
-            padding: 10px;
-            color: white;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-
-        .calc-button {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, var(--gold), #d97706);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-weight: bold;
-            font-size: 1.1rem;
-            cursor: pointer;
-            margin-top: 10px;
-            box-shadow: 0 4px 0 #92400e;
-            transition: all 0.1s;
-        }
-        .calc-button:active {
-            transform: translateY(3px);
-            box-shadow: 0 1px 0 #92400e;
-        }
-
-        .status-side {
-            padding: 10px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .level-text { font-size: 0.9rem; color: var(--gold); font-weight: bold; }
-        .total-amount { font-size: 2.8rem; font-weight: bold; color: white; text-align: center; }
-        .unit { font-size: 0.9rem; margin-left: 5px; }
-
-        .quest-box {
-            background: rgba(0,0,0,0.2);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px dashed #374151;
-        }
+        /* 左側：ステータス & 入力 */
+        .panel { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .field { margin-bottom: 12px; }
+        label { display: block; font-size: 0.7rem; color: #9ca3af; margin-bottom: 4px; }
+        input { width: 100%; background: #111827; border: 1px solid #374151; border-radius: 6px; padding: 8px; color: white; box-sizing: border-box; }
         
-        .progress-bg {
-            background: #111827;
-            height: 18px;
-            border-radius: 9px;
-            overflow: hidden;
-            border: 1px solid #374151;
+        /* 右側：カレンダー */
+        .calendar-card { background: var(--card); padding: 20px; border-radius: 20px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 15px; }
+        .day-cell { 
+            background: #111827; border: 1px solid #374151; aspect-ratio: 1/1; 
+            border-radius: 8px; display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; cursor: pointer; transition: 0.2s; position: relative;
         }
-        #progress-fill {
-            background: linear-gradient(90deg, #059669, #10b981);
-            height: 100%;
-            width: 0%;
-            transition: width 0.6s ease;
-        }
+        .day-cell:hover { border-color: var(--primary); background: #1e293b; }
+        .day-cell.active { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        .day-num { font-size: 0.7rem; position: absolute; top: 4px; left: 4px; color: #6b7280; }
+        .work-time { font-size: 0.8rem; font-weight: bold; color: var(--success); }
 
-        .advice-box {
-            font-size: 0.85rem;
-            background: #2d3748;
-            padding: 12px;
-            border-radius: 10px;
-            color: #e2e8f0;
-        }
-
-        @media (max-width: 600px) {
-            .container { grid-template-columns: 1fr; }
-            .input-side { border-right: none; border-bottom: 1px solid #374151; }
-        }
+        .total-display { font-size: 2rem; font-weight: bold; text-align: center; margin: 15px 0; color: var(--gold); }
+        .btn-update { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
+        
+        .header-cal { display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
-<audio id="se-coin" preload="auto">
-    <source src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" type="audio/mpeg">
-</audio>
-<audio id="se-clear" preload="auto">
-    <source src="https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3" type="audio/mpeg">
-</audio>
-
-<div class="container">
-    <div class="input-side">
-        <h2>CHARACTER STATS</h2>
+<div class="game-layout">
+    <div class="panel">
+        <h2 style="font-size: 1rem; color: var(--primary);">CHARACTER STATS</h2>
         <div class="field"><label>時給 (ATK)</label><input type="number" id="wage" value="1200"></div>
-        <div class="field"><label>通常勤務 (h)</label><input type="number" id="hours" value="160"></div>
-        <div class="field"><label>残業 (h)</label><input type="number" id="overtime" value="0"></div>
-
-        <h2 style="border-left-color: var(--success);">MISSION TARGET</h2>
-        <div class="field"><label>目標手取り (Goal)</label><input type="number" id="target" value="250000"></div>
-
-        <button id="calc-btn" class="calc-button">QUEST UPDATE 💰</button>
+        <div class="field"><label>合計勤務時間 (集計済み)</label><input type="number" id="hours" value="0" readonly style="background: #374151;"></div>
+        
+        <div class="total-display"><span id="net">0</span><span style="font-size: 1rem;"> 円</span></div>
+        
+        <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; font-size: 0.8rem;">
+            <div id="rank" style="color: var(--gold);">RANK: 駆け出し</div>
+            <div id="advice" style="margin-top: 5px; color: #9ca3af;">カレンダーで勤務記録を付けてください</div>
+        </div>
+        <button id="calc-btn" class="btn-update" style="margin-top: 15px;">QUEST RECALC 💰</button>
     </div>
 
-    <div class="status-side">
-        <div style="display: flex; justify-content: space-between; align-items: baseline;">
-            <div class="level-text">LV: <span id="lv">1</span></div>
-            <div id="rank" style="color:var(--gold); font-size: 0.8rem;">駆け出し</div>
+    <div class="calendar-card">
+        <div class="header-cal">
+            <h2 style="margin: 0; font-size: 1.2rem;">QUEST LOG <span style="font-size: 0.8rem; color: #6b7280;">(1月)</span></h2>
+            <div style="font-size: 0.8rem; color: var(--success);">Total: <span id="cal-total-h">0</span>h</div>
         </div>
-        <div class="total-amount"><span id="net">0</span><span class="unit">円</span></div>
-        
-        <div class="quest-box">
-            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px;">
-                <span>QUEST PROGRESS</span><span id="percent-text">0%</span>
+        <div class="calendar-grid" id="calendar-body">
             </div>
-            <div class="progress-bg"><div id="progress-fill"></div></div>
-            <div id="remaining-area" style="text-align: right; margin-top: 8px; font-size: 0.8rem;"></div>
-        </div>
-
-        <div class="advice-box" id="advice-container">
-            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 8px;">追加クエスト必要時間:</div>
-            <div id="advice-list"></div>
-        </div>
     </div>
 </div>
 
@@ -175,68 +75,68 @@
 from pyscript import window, document
 from pyodide.ffi import create_proxy
 
-last_cleared = False
+# 勤務データの管理 (日付: 時間)
+work_log = {}
 
-def calculate(event):
-    global last_cleared
+def update_calc(event=None):
+    wage = float(document.getElementById("wage").value or 0)
+    total_h = sum(work_log.values())
     
-    try:
-        wage = float(document.getElementById("wage").value or 0)
-        hours = float(document.getElementById("hours").value or 0)
-        overtime = float(document.getElementById("overtime").value or 0)
-        target = float(document.getElementById("target").value or 1)
+    # 時間を反映
+    document.getElementById("hours").value = f"{total_h:.1f}"
+    document.getElementById("cal-total-h").innerText = f"{total_h:.1f}"
+    
+    # 手取り計算 (0.8がけ)
+    net = int((wage * total_h) * 0.8)
+    document.getElementById("net").innerText = f"{net:,}"
+    
+    # ランク更新
+    rank_el = document.getElementById("rank")
+    if net >= 200000: rank_el.innerText = "RANK: 熟練の戦士"
+    elif net >= 100000: rank_el.innerText = "RANK: 中堅冒険者"
+    else: rank_el.innerText = "RANK: 駆け出し"
+
+def on_day_click(event):
+    day = event.currentTarget.getAttribute("data-day")
+    # プロンプトで時間を入力（簡易版）
+    val = window.prompt(f"{day}日の勤務時間(h)を入力してください:", "8")
+    
+    if val is not None:
+        try:
+            h = float(val)
+            work_log[day] = h
+            # セルの表示を更新
+            cell = event.currentTarget
+            cell.classList.add("active")
+            cell.querySelector(".work-time").innerText = f"{h}h"
+            update_calc()
+        except:
+            pass
+
+def init_calendar():
+    grid = document.getElementById("calendar-body")
+    # 1ヶ月分(31日)のセルを作成
+    for d in range(1, 32):
+        cell = document.createElement("div")
+        cell.className = "day-cell"
+        cell.setAttribute("data-day", str(d))
         
-        # 計算
-        current_gross = (wage * hours) + (wage * 1.25 * overtime)
-        net = int(current_gross * 0.8)
-        diff_net = max(0, target - net)
+        num_span = document.createElement("span")
+        num_span.className = "day-num"
+        num_span.innerText = str(d)
         
-        # 音を鳴らす
-        if diff_net <= 0 and not last_cleared:
-            audio = document.getElementById("se-clear")
-            audio.currentTime = 0
-            audio.play()
-            last_cleared = True
-        else:
-            audio = document.getElementById("se-coin")
-            audio.currentTime = 0
-            audio.play()
-            if diff_net > 0: last_cleared = False
-
-        # 反映
-        document.getElementById("net").innerText = f"{net:,}"
-        document.getElementById("lv").innerText = str((net // 10000) + 1)
+        time_span = document.createElement("span")
+        time_span.className = "work-time"
+        time_span.innerText = ""
         
-        percent = min(100, (net / target) * 100)
-        document.getElementById("progress-fill").style.width = f"{percent}%"
-        document.getElementById("percent-text").innerText = f"{int(percent)}%"
-        
-        # 残り
-        rem_area = document.getElementById("remaining-area")
-        adv_list = document.getElementById("advice-list")
-        if diff_net <= 0:
-            rem_area.innerHTML = "<span style='color:var(--success); font-weight:bold;'>QUEST CLEAR!</span>"
-            adv_list.innerHTML = "ミッション達成済みです。"
-        else:
-            rem_area.innerHTML = f"目標まであと <span style='color:var(--danger); font-weight:bold;'>{diff_net:,}</span> 円"
-            need_h = (diff_net / 0.8) / wage if wage > 0 else 0
-            adv_list.innerHTML = f"通常勤務あと <span style='color:var(--gold); font-weight:bold;'>{need_h:.1f}</span> 時間"
+        cell.appendChild(num_span)
+        cell.appendChild(time_span)
+        cell.addEventListener("click", create_proxy(on_day_click))
+        grid.appendChild(cell)
 
-        # ランク
-        rank = "駆け出し"
-        if net >= 300000: rank = "伝説の勇者"
-        elif net >= 200000: rank = "熟練の戦士"
-        document.getElementById("rank").innerText = rank
-
-    except Exception as e:
-        print(f"Error: {e}")
-
-# ボタンにイベントを登録
-calc_btn = document.getElementById("calc-btn")
-calc_btn.addEventListener("click", create_proxy(calculate))
-
-# 初期計算
-calculate(None)
+# 起動
+init_calendar()
+document.getElementById("calc-btn").addEventListener("click", create_proxy(update_calc))
 </script>
 
 </body>
