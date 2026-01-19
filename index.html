@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Leveler - Chart Fix</title>
+    <title>Money Leveler - Quest Analyze</title>
     
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
@@ -16,25 +16,59 @@
             --danger: #dc2626; --bg: #f8fafc; --card: #ffffff;
             --text-main: #1e293b;
         }
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .game-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; max-width: 1100px; width: 100%; }
-        .panel { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+
+        body { 
+            font-family: 'Noto Sans JP', sans-serif; 
+            background-color: var(--bg); color: var(--text-main); 
+            margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; 
+        }
+
+        .game-layout { 
+            display: grid; grid-template-columns: 320px 1fr; gap: 20px; 
+            max-width: 1100px; width: 100%; 
+        }
+
+        .panel { 
+            background: var(--card); padding: 20px; border-radius: 16px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;
+        }
+
         .hidden { display: none !important; }
+
         h2 { font-size: 0.9rem; margin: 0 0 15px 0; border-left: 4px solid var(--primary); padding-left: 10px; }
+
         .field { margin-bottom: 12px; }
         label { display: block; font-size: 0.75rem; font-weight: bold; color: #64748b; margin-bottom: 4px; }
-        input { width: 100%; background: #f1f5f9; border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px; color: var(--text-main); box-sizing: border-box; }
+        input { 
+            width: 100%; background: #f1f5f9; border: 2px solid #e2e8f0; 
+            border-radius: 8px; padding: 8px; color: var(--text-main); box-sizing: border-box;
+        }
+
         .total-display { font-size: 2.2rem; font-weight: 800; text-align: center; margin: 15px 0; color: var(--primary); }
+
+        /* カレンダー */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 15px; }
-        .day-cell { background: #fff; border: 1px solid #e2e8f0; aspect-ratio: 1/1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; min-height: 60px; }
+        .day-cell { 
+            background: #fff; border: 1px solid #e2e8f0; aspect-ratio: 1/1; 
+            border-radius: 8px; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; cursor: pointer; position: relative; min-height: 60px;
+        }
+        .day-cell:hover { background: #f1f5f9; }
         .day-cell.active { background: #ecfdf5; border-color: var(--success); }
+        .day-num { font-size: 0.7rem; position: absolute; top: 4px; left: 6px; color: #94a3b8; }
         .work-time { font-size: 0.85rem; font-weight: bold; color: var(--success); }
+
+        /* ボタン */
         .btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .btn-analyze { background: var(--gold); color: white; }
         .btn-back { background: var(--primary); color: white; }
+        
+        /* 統計画面 */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .stat-card { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .stat-card { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; }
         .chart-container { position: relative; height: 180px; width: 100%; margin-top: 10px; }
+        
+        @media (max-width: 800px) { .game-layout { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -42,26 +76,51 @@
 <div id="main-view" class="game-layout">
     <div class="panel">
         <h2>PLAYER STATS</h2>
-        <div class="field"><label>時給</label><input type="number" id="wage" value="1200"></div>
-        <div class="field"><label>目標額</label><input type="number" id="target" value="200000"></div>
+        <div class="field"><label>時給 (WAGE)</label><input type="number" id="wage" value="1200"></div>
+        <div class="field"><label>目標額 (GOAL)</label><input type="number" id="target" value="200000"></div>
+        
         <div class="total-display"><span id="net">0</span><span style="font-size: 0.9rem;"> 円</span></div>
-        <div id="advice-text" style="font-size: 0.8rem; text-align:center; color: #64748b; margin-bottom: 10px;"></div>
-        <button id="to-stats-btn" class="btn btn-analyze">ANALYZE 📊</button>
+        
+        <div id="advice-text" style="font-size: 0.8rem; text-align:center; color: #64748b; margin-bottom: 10px; min-height: 1.2em;"></div>
+        
+        <button id="to-stats-btn" class="btn btn-analyze">ANALYZE (分析モード) 📊</button>
     </div>
+
     <div class="panel">
-        <h2 style="border-color: var(--success);">QUEST LOG (2026年1月)</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="border-color: var(--success); margin-bottom: 0;">QUEST LOG (2026年1月)</h2>
+            <div style="font-weight: bold; color: var(--success); font-size: 0.9rem;">Total: <span id="cal-total-h">0</span>h</div>
+        </div>
         <div class="calendar-grid" id="calendar-body"></div>
     </div>
 </div>
 
 <div id="stats-view" class="panel hidden" style="max-width: 850px; width: 95%;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2>MISSION ANALYSIS</h2>
+        <h2 style="margin:0;">MISSION ANALYSIS</h2>
         <button id="to-main-btn" class="btn btn-back" style="width: auto; margin: 0; padding: 8px 20px;">戻る</button>
     </div>
+
     <div class="stats-grid">
-        <div class="stat-card"><label>クエスト達成率</label><div class="chart-container"><canvas id="goalChart"></canvas></div></div>
-        <div class="stat-card"><label>曜日別の出勤傾向 (h)</label><div class="chart-container"><canvas id="dayChart"></canvas></div></div>
+        <div class="stat-card">
+            <label>クエスト達成率</label>
+            <div class="chart-container"><canvas id="goalChart"></canvas></div>
+        </div>
+        <div class="stat-card">
+            <label>曜日別・労働合計(h)</label>
+            <div class="chart-container"><canvas id="dayChart"></canvas></div>
+        </div>
+        <div class="stat-card">
+            <label>平均勤務 / 推定支給額</label>
+            <div id="avg-h" style="font-size: 1.8rem; font-weight: bold; color: var(--primary); margin-top: 15px;">0 h/日</div>
+            <div id="gross-amount" style="font-weight: bold; color: var(--success); margin-top: 5px;">0 円</div>
+        </div>
+        <div class="stat-card">
+            <label>クエスト傾向分析</label>
+            <div id="ai-insight" style="font-size: 0.8rem; color: #475569; margin-top: 15px; line-height: 1.5; text-align: left; padding: 0 10px;">
+                データを入力して分析を開始してください。
+            </div>
+        </div>
     </div>
 </div>
 
@@ -71,17 +130,24 @@ import datetime
 from pyscript import window, document
 from pyodide.ffi import create_proxy
 
+# グローバルデータ
 work_log = {}
 goal_chart = None
 day_chart = None
 
 def save_data():
-    data = {"wage": document.getElementById("wage").value, "target": document.getElementById("target").value, "log": work_log}
-    window.localStorage.setItem("money_leveler_v5", json.dumps(data))
+    """ブラウザにデータを保存"""
+    data = {
+        "wage": document.getElementById("wage").value,
+        "target": document.getElementById("target").value,
+        "log": work_log
+    }
+    window.localStorage.setItem("money_leveler_vFinal", json.dumps(data))
 
 def load_data():
+    """ブラウザからデータを読み込み"""
     global work_log
-    raw = window.localStorage.getItem("money_leveler_v5")
+    raw = window.localStorage.getItem("money_leveler_vFinal")
     if raw:
         try:
             data = json.loads(raw)
@@ -90,76 +156,103 @@ def load_data():
             work_log = data.get("log", {})
         except: pass
 
-def update_ui(event=None):
+def update_ui():
+    """メイン画面の数値更新"""
     wage = float(document.getElementById("wage").value or 0)
     target = float(document.getElementById("target").value or 0)
     total_h = sum(float(v) for v in work_log.values())
+    
+    document.getElementById("cal-total-h").innerText = f"{total_h:.1f}"
     net = int((wage * total_h) * 0.8)
     document.getElementById("net").innerText = f"{net:,}"
+    
     diff = target - net
     adv = document.getElementById("advice-text")
-    adv.innerHTML = f"目標まであと <b style='color:var(--danger)'>{max(0, diff):,}円</b>" if diff > 0 else "MISSION COMPLETE!"
+    if diff > 0:
+        adv.innerHTML = f"目標まであと <b style='color:var(--danger)'>{diff:,}円</b>"
+    else:
+        adv.innerHTML = "<b style='color:var(--success)'>MISSION COMPLETE!</b>"
     save_data()
 
-def render_charts():
+def render_charts(event=None):
+    """グラフの描画 (JavaScriptのChart.jsを使用)"""
     global goal_chart, day_chart
+    
     wage = float(document.getElementById("wage").value or 0)
     target = float(document.getElementById("target").value or 1)
     total_h = sum(float(v) for v in work_log.values())
     net = int((wage * total_h) * 0.8)
     
-    # JavaScriptの配列を作成するためのヘルパー
-    def to_js_list(py_list):
-        js_array = window.Array.from_(create_proxy(py_list))
-        return js_array
-
-    # --- 円グラフ ---
-    if goal_chart: goal_chart.destroy()
-    goal_chart = window.Chart.new(document.getElementById("goalChart"), create_proxy({
-        "type": "doughnut",
-        "data": {
-            "labels": ["手取り", "不足"],
-            "datasets": [{
-                "data": [net, max(0, target - net)],
-                "backgroundColor": ["#4f46e5", "#e2e8f0"]
-            }]
-        },
-        "options": {"maintainAspectRatio": False}
-    }))
-
-    # --- 曜日別棒グラフ ---
+    # 曜日別集計 (2026年1月ベース)
     day_totals = [0.0] * 7
+    weekday_names = ["月", "火", "水", "木", "金", "土", "日"]
     for d_str, h in work_log.items():
         dt = datetime.date(2026, 1, int(d_str))
         day_totals[dt.weekday()] += float(h)
 
-    if day_chart: day_chart.destroy()
-    day_chart = window.Chart.new(document.getElementById("dayChart"), create_proxy({
-        "type": "bar",
+    # JS側に渡すためのプロキシ作成
+    js_goal_labels = window.Array.from_(create_proxy(["手取り", "不足"]))
+    js_goal_data = window.Array.from_(create_proxy([net, max(0, target - net)]))
+    
+    js_day_labels = window.Array.from_(create_proxy(weekday_names))
+    js_day_data = window.Array.from_(create_proxy(day_totals))
+
+    # クエスト達成率グラフ
+    if goal_chart: goal_chart.destroy()
+    goal_ctx = document.getElementById("goalChart")
+    goal_chart = window.Chart.new(goal_ctx, create_proxy({
+        "type": "doughnut",
         "data": {
-            "labels": ["月", "火", "水", "木", "金", "土", "日"],
-            "datasets": [{
-                "label": "合計時間(h)",
-                "data": day_totals,
-                "backgroundColor": "#059669"
-            }]
+            "labels": js_goal_labels,
+            "datasets": [{"data": js_goal_data, "backgroundColor": ["#4f46e5", "#e2e8f0"]}]
         },
-        "options": {"maintainAspectRatio": False, "scales": {"y": {"beginAtZero": True}}}
+        "options": {"maintainAspectRatio": False}
     }))
 
+    # 曜日別棒グラフ
+    if day_chart: day_chart.destroy()
+    day_ctx = document.getElementById("dayChart")
+    day_chart = window.Chart.new(day_ctx, create_proxy({
+        "type": "bar",
+        "data": {
+            "labels": js_day_labels,
+            "datasets": [{"label": "h", "data": js_day_data, "backgroundColor": "#059669"}]
+        },
+        "options": {
+            "maintainAspectRatio": False,
+            "plugins": {"legend": {"display": False}},
+            "scales": {"y": {"beginAtZero": True}}
+        }
+    }))
+
+    # 平均・アドバイス
+    days_worked = len([v for v in work_log.values() if float(v) > 0])
+    avg_h = total_h / days_worked if days_worked > 0 else 0
+    document.getElementById("avg-h").innerText = f"{avg_h:.1f} h/日"
+    document.getElementById("gross-amount").innerText = f"支給額: {int(wage * total_h):,} 円"
+    
+    max_h = max(day_totals)
+    if max_h > 0:
+        best_day = weekday_names[day_totals.index(max_h)]
+        document.getElementById("ai-insight").innerHTML = f"現在の稼ぎ時は<b>{best_day}曜日</b>です。<br>この調子で平均{avg_h:.1f}時間を維持すれば、効率的に目標へ近づけます！"
+
 def switch_view(show_stats):
+    """画面切り替え"""
     if show_stats:
         document.getElementById("main-view").classList.add("hidden")
         document.getElementById("stats-view").classList.remove("hidden")
-        # 画面切り替えの直後にグラフを描画
-        window.setTimeout(create_proxy(render_charts), 50)
+        # 確実に要素が表示されてから描画
+        window.setTimeout(create_proxy(render_charts), 100)
     else:
         document.getElementById("stats-view").classList.add("hidden")
         document.getElementById("main-view").classList.remove("hidden")
 
 def on_day_click(event):
+    """カレンダーの日付クリック時"""
     day = event.currentTarget.getAttribute("data-day")
-    val = window.prompt(f"1/{day} の時間(h):", str(work_log.get(day, "")))
+    current = work_log.get(day, "")
+    val = window.prompt(f"2026/1/{day} の勤務時間(h)を入力:", str(current))
+    
     if val is not None:
         try:
             if val == "" or float(val) == 0:
@@ -173,24 +266,39 @@ def on_day_click(event):
             update_ui()
         except: pass
 
-# 初期化
+# ---------------------------------------------------------
+# 初期化処理
+# ---------------------------------------------------------
 load_data()
+
+# カレンダー生成
 grid = document.getElementById("calendar-body")
 for d in range(1, 32):
     cell = document.createElement("div")
-    cell.className = "day-cell " + ("active" if str(d) in work_log else "")
+    cell.className = "day-cell"
+    if str(d) in work_log: cell.classList.add("active")
     cell.setAttribute("data-day", str(d))
-    cell.innerHTML = f"<span style='font-size:0.7rem; position:absolute; top:4px; left:6px; color:#94a3b8;'>{d}</span>"
+    
+    num = document.createElement("span")
+    num.className = "day-num"
+    num.innerText = str(d)
+    
     time_s = document.createElement("span")
     time_s.className = "work-time"
     time_s.innerText = f"{work_log[str(d)]}h" if str(d) in work_log else ""
+    
+    cell.appendChild(num)
     cell.appendChild(time_s)
     cell.addEventListener("click", create_proxy(on_day_click))
     grid.appendChild(cell)
 
 update_ui()
+
+# イベント登録
 document.getElementById("to-stats-btn").onclick = lambda e: switch_view(True)
 document.getElementById("to-main-btn").onclick = lambda e: switch_view(False)
+document.getElementById("wage").oninput = lambda e: update_ui()
+document.getElementById("target").oninput = lambda e: update_ui()
 </script>
 
 </body>
