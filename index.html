@@ -3,247 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Leveler Lite - Quest Mode</title>
+    <title>Money Leveler - Stable Analyze</title>
     
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --primary: #3b82f6;
-            --gold: #f59e0b;
-            --success: #10b981;
-            --danger: #f87171;
-            --bg: #111827;
-            --card: #1f2937;
+            --primary: #4f46e5; --gold: #d97706; --success: #059669;
+            --danger: #dc2626; --bg: #f8fafc; --card: #ffffff;
+            --text-main: #1e293b;
         }
-
-        body {
-            font-family: 'Noto Sans JP', sans-serif;
-            background-color: var(--bg);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            width: 95%;
-            max-width: 850px;
-            background: var(--card);
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-
-        .input-side {
-            padding: 10px 20px;
-            border-right: 1px solid #374151;
-        }
-
-        h2 { font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 20px; color: #9ca3af; }
-        
-        .field { margin-bottom: 15px; }
-        label { display: block; font-size: 0.75rem; color: #9ca3af; margin-bottom: 5px; }
-        input {
-            width: 100%;
-            background: #111827;
-            border: 2px solid #374151;
-            border-radius: 8px;
-            padding: 10px;
-            color: white;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-
-        /* 派手な計算ボタン */
-        .calc-button {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-weight: bold;
-            font-size: 1.1rem;
-            cursor: pointer;
-            margin-top: 15px;
-            box-shadow: 0 5px 0 #92400e;
-            transition: 0.1s;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-        .calc-button:active {
-            transform: translateY(3px);
-            box-shadow: 0 2px 0 #92400e;
-        }
-
-        .status-side {
-            padding: 10px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .total-amount { font-size: 2.8rem; font-weight: bold; color: white; text-align: center; }
-        .unit { font-size: 0.9rem; margin-left: 5px; }
-
-        .quest-box {
-            background: rgba(0,0,0,0.2);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px dashed #374151;
-        }
-
-        .progress-bg {
-            background: #111827;
-            height: 18px;
-            border-radius: 9px;
-            overflow: hidden;
-            border: 1px solid #374151;
-        }
-        #progress-fill {
-            background: linear-gradient(90deg, #059669, #10b981);
-            height: 100%;
-            width: 0%;
-            transition: width 0.6s cubic-bezier(0.17, 0.67, 0.83, 0.67);
-        }
-
-        .advice-box {
-            font-size: 0.85rem;
-            background: #2d3748;
-            padding: 12px;
-            border-radius: 10px;
-            color: #e2e8f0;
-        }
-
-        @media (max-width: 600px) {
-            .container { grid-template-columns: 1fr; }
-            .input-side { border-right: none; border-bottom: 1px solid #374151; }
-        }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .game-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; max-width: 1100px; width: 100%; }
+        .panel { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .hidden { display: none !important; }
+        h2 { font-size: 0.9rem; margin: 0 0 15px 0; border-left: 4px solid var(--primary); padding-left: 10px; }
+        .field { margin-bottom: 12px; }
+        label { display: block; font-size: 0.75rem; font-weight: bold; color: #64748b; margin-bottom: 4px; }
+        input { width: 100%; background: #f1f5f9; border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px; color: var(--text-main); box-sizing: border-box; }
+        .total-display { font-size: 2.2rem; font-weight: 800; text-align: center; margin: 15px 0; color: var(--primary); }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 15px; }
+        .day-cell { background: #fff; border: 1px solid #e2e8f0; aspect-ratio: 1/1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; min-height: 60px; }
+        .day-cell.active { background: #ecfdf5; border-color: var(--success); }
+        .work-time { font-size: 0.85rem; font-weight: bold; color: var(--success); }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn-analyze { background: var(--gold); color: white; }
+        .btn-back { background: var(--primary); color: white; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stat-card { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; }
+        .chart-container { position: relative; height: 180px; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<audio id="se-coin" preload="auto">
-    <source src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" type="audio/mpeg">
-</audio>
-<audio id="se-clear" preload="auto">
-    <source src="https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3" type="audio/mpeg">
-</audio>
-
-<div class="container">
-    <div class="input-side">
-        <h2>CHARACTER STATS</h2>
-        <div class="field"><label>時給 (ATK)</label><input type="number" id="wage" value="1200"></div>
-        <div class="field"><label>通常勤務 (h)</label><input type="number" id="hours" value="160"></div>
-        <div class="field"><label>残業 (h)</label><input type="number" id="overtime" value="0"></div>
-
-        <h2 style="border-color: var(--success);">MISSION TARGET</h2>
-        <div class="field"><label>目標手取り (Goal)</label><input type="number" id="target" value="250000"></div>
-
-        <button class="calc-button" py-click="calculate">QUEST UPDATE 💰</button>
+<div id="main-view" class="game-layout">
+    <div class="panel">
+        <h2>PLAYER STATS</h2>
+        <div class="field"><label>時給</label><input type="number" id="wage" value="1200"></div>
+        <div class="field"><label>目標額</label><input type="number" id="target" value="200000"></div>
+        <div class="total-display"><span id="net">0</span><span style="font-size: 0.9rem;"> 円</span></div>
+        <div id="advice-text" style="font-size: 0.8rem; text-align:center; color: #64748b; margin-bottom: 10px;"></div>
+        <button id="to-stats-btn" class="btn btn-analyze">ANALYZE 📊</button>
     </div>
+    <div class="panel">
+        <h2>QUEST LOG (2026年1月)</h2>
+        <div class="calendar-grid" id="calendar-body"></div>
+    </div>
+</div>
 
-    <div class="status-side">
-        <div>
-            <div style="display: flex; justify-content: space-between; font-weight: bold;">
-                <div style="color: var(--gold);">LV: <span id="lv">1</span></div>
-                <div id="rank" style="color: var(--gold);">駆け出し</div>
-            </div>
-            <div class="total-amount"><span id="net">0</span><span class="unit">円</span></div>
+<div id="stats-view" class="panel hidden" style="max-width: 850px; width: 95%;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin:0;">MISSION ANALYSIS</h2>
+        <button id="to-main-btn" class="btn btn-back" style="width: auto; margin: 0; padding: 8px 20px;">戻る</button>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <label>クエスト達成率</label>
+            <div class="chart-container"><canvas id="goalChart"></canvas></div>
         </div>
-        
-        <div class="quest-box">
-            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px;">
-                <span>QUEST PROGRESS</span>
-                <span id="percent-text">0%</span>
-            </div>
-            <div class="progress-bg"><div id="progress-fill"></div></div>
-            <div id="remaining-area" style="text-align: right; margin-top: 8px; font-size: 0.8rem;"></div>
-        </div>
-
-        <div class="advice-box" id="advice-container">
-            <div style="color: #9ca3af; margin-bottom: 5px;">クリアへの道筋:</div>
-            <div id="advice-list"></div>
+        <div class="stat-card">
+            <label>曜日別・労働合計(h)</label>
+            <div class="chart-container"><canvas id="dayChart"></canvas></div>
         </div>
     </div>
 </div>
 
+<script>
+    let goalChart, dayChart;
+
+    function drawCharts(net, target, dayTotals) {
+        // クエスト達成率
+        const goalCtx = document.getElementById('goalChart').getContext('2d');
+        if (goalChart) goalChart.destroy();
+        goalChart = new Chart(goalCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['手取り額', '不足分'],
+                datasets: [{
+                    data: [net, Math.max(0, target - net)],
+                    backgroundColor: ['#4f46e5', '#e2e8f0']
+                }]
+            },
+            options: { maintainAspectRatio: false }
+        });
+
+        // 曜日別傾向
+        const dayCtx = document.getElementById('dayChart').getContext('2d');
+        if (dayChart) dayChart.destroy();
+        dayChart = new Chart(dayCtx, {
+            type: 'bar',
+            data: {
+                labels: ['月', '火', '水', '木', '金', '土', '日'],
+                datasets: [{
+                    label: '労働時間(h)',
+                    data: dayTotals,
+                    backgroundColor: '#059669'
+                }]
+            },
+            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+        });
+    }
+</script>
+
 <script type="py">
-from pyscript import window
+import json
+import datetime
+from pyscript import window, document
+from pyodide.ffi import create_proxy
 
-# 達成状態を保持
-is_goal_met = False
+work_log = {}
 
-def calculate(event=None):
-    global is_goal_met
-    doc = window.document
-    
-    try:
-        # 入力値の取得
-        wage = float(doc.getElementById("wage").value or 0)
-        hrs = float(doc.getElementById("hours").value or 0)
-        ot = float(doc.getElementById("overtime").value or 0)
-        tgt = float(doc.getElementById("target").value or 1)
+def save_data():
+    data = {"wage": document.getElementById("wage").value, "target": document.getElementById("target").value, "log": work_log}
+    window.localStorage.setItem("money_leveler_v6", json.dumps(data))
+
+def load_data():
+    global work_log
+    raw = window.localStorage.getItem("money_leveler_v6")
+    if raw:
+        try:
+            data = json.loads(raw)
+            document.getElementById("wage").value = data.get("wage", 1200)
+            document.getElementById("target").value = data.get("target", 200000)
+            work_log = data.get("log", {})
+        except: pass
+
+def update_ui():
+    wage = float(document.getElementById("wage").value or 0)
+    target = float(document.getElementById("target").value or 0)
+    total_h = sum(float(v) for v in work_log.values())
+    net = int((wage * total_h) * 0.8)
+    document.getElementById("net").innerText = f"{net:,}"
+    diff = target - net
+    adv = document.getElementById("advice-text")
+    adv.innerHTML = f"目標まであと <b style='color:var(--danger)'>{max(0, diff):,}円</b>" if diff > 0 else "MISSION COMPLETE!"
+    save_data()
+
+def switch_view(show_stats):
+    if show_stats:
+        document.getElementById("main-view").classList.add("hidden")
+        document.getElementById("stats-view").classList.remove("hidden")
         
-        # ロジック：手取り換算
-        gross = (wage * hrs) + (wage * 1.25 * ot)
-        net = int(gross * 0.8)
+        # 数値の準備
+        wage = float(document.getElementById("wage").value or 0)
+        target = float(document.getElementById("target").value or 1)
+        total_h = sum(float(v) for v in work_log.values())
+        net = int((wage * total_h) * 0.8)
         
-        diff_net = max(0, tgt - net)
+        day_totals = [0.0] * 7
+        for d_str, h in work_log.items():
+            dt = datetime.date(2026, 1, int(d_str))
+            day_totals[dt.weekday()] += float(h)
         
-        # --- サウンド再生ロジック ---
-        if event: # ボタンクリック時のみ
-            if diff_net <= 0 and not is_goal_met:
-                # ちょうど目標達成した瞬間
-                audio = doc.getElementById("se-clear")
-                audio.currentTime = 0
-                audio.play()
-                is_goal_met = True
+        # JavaScriptの関数を呼び出し (重要)
+        window.drawCharts(net, target, window.Array.from_(create_proxy(day_totals)))
+    else:
+        document.getElementById("stats-view").classList.add("hidden")
+        document.getElementById("main-view").classList.remove("hidden")
+
+def on_day_click(event):
+    day = event.currentTarget.getAttribute("data-day")
+    val = window.prompt(f"1/{day} の勤務時間(h):", str(work_log.get(day, "")))
+    if val is not None:
+        try:
+            if val == "" or float(val) == 0:
+                if day in work_log: del work_log[day]
+                event.currentTarget.classList.remove("active")
+                event.currentTarget.querySelector(".work-time").innerText = ""
             else:
-                # 通常の計算（チャリン）
-                audio = doc.getElementById("se-coin")
-                audio.currentTime = 0
-                audio.play()
-                if diff_net > 0: is_goal_met = False
+                work_log[day] = float(val)
+                event.currentTarget.classList.add("active")
+                event.currentTarget.querySelector(".work-time").innerText = f"{val}h"
+            update_ui()
+        except: pass
 
-        # 画面更新
-        doc.getElementById("net").innerText = f"{net:,}"
-        doc.getElementById("lv").innerText = str((net // 10000) + 1)
-        
-        pct = min(100, (net / tgt) * 100)
-        doc.getElementById("progress-fill").style.width = f"{pct}%"
-        doc.getElementById("percent-text").innerText = f"{int(pct)}%"
-        
-        # アドバイス表示
-        rem_el = doc.getElementById("remaining-area")
-        adv_el = doc.getElementById("advice-list")
-        
-        if diff_net <= 0:
-            rem_el.innerHTML = "<span style='color:var(--success); font-weight:bold;'>QUEST CLEAR!</span>"
-            adv_el.innerHTML = "おめでとう！ミッション完了です。"
-        else:
-            rem_el.innerHTML = f"目標まであと <span style='color:var(--danger);'>{diff_net:,}</span> 円"
-            need_h = (diff_net / 0.8) / wage if wage > 0 else 0
-            adv_el.innerHTML = f"通常クエストあと <b style='color:var(--gold);'>{need_h:.1f}</b> 時間で達成可能"
+# 初期化
+load_data()
+grid = document.getElementById("calendar-body")
+for d in range(1, 32):
+    cell = document.createElement("div")
+    cell.className = "day-cell " + ("active" if str(d) in work_log else "")
+    cell.setAttribute("data-day", str(d))
+    cell.innerHTML = f"<span style='font-size:0.7rem; position:absolute; top:4px; left:6px; color:#94a3b8;'>{d}</span>"
+    time_s = document.createElement("span")
+    time_s.className = "work-time"
+    time_s.innerText = f"{work_log[str(d)]}h" if str(d) in work_log else ""
+    cell.appendChild(time_s)
+    cell.addEventListener("click", create_proxy(on_day_click))
+    grid.appendChild(cell)
 
-        # ランク判定
-        rank_text = "駆け出し"
-        if net >= 300000: rank_text = "伝説の勇者"
-        elif net >= 200000: rank_text = "熟練の戦士"
-        doc.getElementById("rank").innerText = rank_text
-
-    except Exception as e:
-        print(f"Error: {e}")
-
-# 初回実行
-calculate()
+update_ui()
+document.getElementById("to-stats-btn").onclick = lambda e: switch_view(True)
+document.getElementById("to-main-btn").onclick = lambda e: switch_view(False)
+document.getElementById("wage").oninput = lambda e: update_ui()
+document.getElementById("target").oninput = lambda e: update_ui()
 </script>
 
 </body>
